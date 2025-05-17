@@ -1,4 +1,4 @@
-# MovieMateBot
+# MovieMate Telegram Bot
 
 **MovieMateBot** is a Telegram bot designed to simplify movie planning and tracking for pairs of users. It allows two users to create a shared movie list, categorized as "Planned" or "Watched," add movies, view lists, and get random movie suggestions from their planned list. Users connect via an invite code and interact with a unified dataset stored in Supabase.
 
@@ -99,6 +99,39 @@ erDiagram
 - Support for groups larger than two users
 - Movie watch reminders
 - Integration with TMDB API for movie details and posters
+
+## Установка
+
+1. Клонируйте репозиторий:
+```bash
+git clone https://github.com/ValliKaz/MovieMatebot.git
+cd MovieMateBot
+```
+
+2. Создайте виртуальное окружение и активируйте его:
+```bash
+python -m venv venv
+# Для Windows:
+venv\Scripts\activate
+# Для Linux/Mac:
+source venv/bin/activate
+```
+
+3. Установите зависимости:
+```bash
+pip install -r requirements.txt
+```
+
+4. Создайте файл .env в корневой директории проекта и добавьте в него токен вашего бота:
+```
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+```
+
+## Запуск бота
+
+```bash
+python bot.py
+```
 
 ## 📜 License
 
