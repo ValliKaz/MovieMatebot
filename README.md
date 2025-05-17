@@ -63,15 +63,23 @@
 
 ## 📊 ER Diagram
 
-```plaintext
-┌──────────────┐        ┌─────────────────┐
-│   users      │        │     movies      │
-├──────────────┤        ├─────────────────┤
-│ id (PK)      │◄──┬────┤ user_id (FK)    │
-│ chat_id      │   │    │ title           │
-│ invite_code  │   │    │ category        │
-│ partner_id   │───┘    │ created_at      │
-└──────────────┘        └─────────────────┘
+```mermaid
+erDiagram
+    USERS ||--o{ MOVIES : "owns"
+    USERS ||--o| USERS : "paired_with"
+    USERS {
+        UUID id PK
+        TEXT chat_id
+        TEXT invite_code
+        UUID partner_id FK
+    }
+    MOVIES {
+        UUID id PK
+        UUID user_id FK
+        TEXT title
+        TEXT category
+        TIMESTAMP created_at
+    }
 ```
 
 - `users.partner_id`: Self-referential foreign key for pairing users.
