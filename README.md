@@ -61,6 +61,19 @@
 | `category`    | TEXT            | Category (`planned` or `watched`)    |
 | `created_at`  | TIMESTAMP       | Date the movie was added             |
 
+## 📊 ER Diagram
+
+```plaintext
+┌──────────────┐        ┌─────────────────┐
+│   users      │        │     movies      │
+├──────────────┤        ├─────────────────┤
+│ id (PK)      │◄──┬────┤ user_id (FK)    │
+│ chat_id      │   │    │ title           │
+│ invite_code  │   │    │ category        │
+│ partner_id   │───┘    │ created_at      │
+└──────────────┘        └─────────────────┘
+```
+
 - `users.partner_id`: Self-referential foreign key for pairing users.
 - `movies.user_id`: Links movies to their owner.
 
