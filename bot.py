@@ -321,9 +321,8 @@ def edit_list_menu(update: Update, context: CallbackContext):
     text = "<b>Your movies:</b>\n"
     for m in movies:
         cat = 'loved' if m['category'] == 'watched' else m['category']
-        text += f"ID: <code>{m['id']}</code> | {m['title']} ({cat})\n"
-    text += "\n<em>Note: You can tap and copy the <code>ID</code> for use in commands below.</em>\n"
-    text += "Choose an action below or use commands:\nTo edit: /edit <code>movie_id</code> <code>new_title</code>\nTo delete: /delete <code>movie_id</code>\nTo change category: /setcat <code>movie_id</code> <code>planned|loved</code>"
+        text += f"ID: {m['id']} | {m['title']} ({cat})\n"
+    text += "\nChoose an action below or use commands:\nTo edit: /edit <code>movie_id</code> <code>new_title</code>\nTo delete: /delete <code>movie_id</code>\nTo change category: /setcat <code>movie_id</code> <code>planned|loved</code>"
     keyboard = [
         [InlineKeyboardButton("✏️ Edit Title", callback_data="choose_edit"),
          InlineKeyboardButton("🗂️ Edit Category", callback_data="choose_editcat")],

@@ -27,18 +27,67 @@
 ## 👣 User Workflow
 
 ### 🧍 User A
-1. Runs `/start`
-2. Generates an invite code with `/invite` (e.g., `INV-893421`)
-3. Shares the code with User B
+1. Start the bot with `/start`.
+2. Generate an invite code using `/invite` (e.g., `INV-893421`).
+3. Share the invite code with User B.
 
 ### 🧍‍♂️ User B
-1. Runs `/start`
-2. Joins using `/join INV-893421`
+1. Start the bot with `/start`.
+2. Join the pair by sending `/join INV-893421`.
 
-### 🎉 Paired Users
-- Add movies to shared lists
-- View movies in "Planned" or "Watched" categories
-- Get random movie suggestions
+### 🎉 Once Paired
+- Both users can add movies to their shared list.
+- View movies in either the "Planned" or "Watched" categories.
+- Get random movie suggestions from the "Planned" list.
+- Edit or delete movies, or change their category, all via button-based menus.
+- All changes are instantly synchronized for both users.
+
+## 🆕 Advanced Features
+
+- **Full button-based interface**: All actions (add, edit, delete, change category, random pick) are available via Telegram buttons and menus — no need to remember commands.
+- **Edit movie title and category**: Change both the name and the category (planned/loved) of any movie via interactive inline menus.
+- **Delete with confirmation**: Deleting a movie always asks for confirmation via Yes/No buttons.
+- **Unified edit menu**: The "Edit Movies" menu allows you to:
+  - Edit movie title (choose a movie, then enter a new name)
+  - Change movie category (choose a movie, then select category)
+  - Delete a movie (choose a movie, then confirm)
+- **Robust error handling**: All user actions and errors are logged; the bot provides clear feedback for every operation.
+- **Partner-aware**: All lists and actions are always synchronized between you and your paired user.
+
+## 📝 Example Usage (Button Flow)
+
+1. Open the main menu and tap "✏️ Edit Movies" (or use `/editdeletemenu`).
+2. See your full movie list and choose:
+   - "✏️ Edit Title" — select a movie, then enter a new title.
+   - "🗂️ Edit Category" — select a movie, then pick Planned/Loved.
+   - "🗑️ Delete" — select a movie, then confirm deletion.
+3. All changes are instantly reflected for both you and your partner.
+4. Use the "🎲 Random Movie" button to get a random suggestion from your "Planned" list.
+5. Use the "📜 List Movies" button to view your movies in either category.
+6. Use the "🔗 Partner Status" button to check if you're paired with someone.
+7. Use the "🔗 Unlink" button to disconnect from your partner.
+
+## 📁 Project Structure
+
+```
+movieMateBot/
+├── bot.py                # Entry point, dispatcher setup
+├── db.py                 # (Optional) Supabase helper functions
+├── keyboards.py          # Keyboard layouts (Reply/Inline)
+├── requirements.txt      # Python dependencies
+├── README.md             # Project documentation
+├── utils.py              # Logging and utility functions
+├── handlers/             # All bot logic split by domain
+│   ├── __init__.py
+│   ├── menu.py           # Menu and navigation handlers
+│   ├── movies.py         # Movie actions: add, edit, delete, setcat, list, random
+│   └── partner.py        # Partner actions: invite, join, unlink, status
+└── bot.log               # Log file (auto-generated)
+```
+
+- All business logic is split by domain in the `handlers/` folder.
+- `bot.py` only contains startup and handler registration.
+- All keyboards and utility functions are in their own files for clarity.
 
 ## 💾 Supabase Integration
 
@@ -97,29 +146,8 @@ erDiagram
 
 - AI-powered movie recommendations
 - Support for groups larger than two users
-- Movie watch reminders
 - Integration with TMDB API for movie details and posters
-
-## 🆕 Advanced Features (2025)
-
-- **Full button-based interface**: All actions (add, edit, delete, change category, random pick) are available via Telegram buttons and menus — no need to remember commands.
-- **Edit movie title and category**: Change both the name and the category (planned/loved) of any movie via interactive inline menus.
-- **Delete with confirmation**: Deleting a movie always asks for confirmation via Yes/No buttons.
-- **Unified edit menu**: The "Edit Movies" menu allows you to:
-  - Edit movie title (choose a movie, then enter a new name)
-  - Change movie category (choose a movie, then select category)
-  - Delete a movie (choose a movie, then confirm)
-- **Robust error handling**: All user actions and errors are logged; the bot provides clear feedback for every operation.
-- **Partner-aware**: All lists and actions are always synchronized between you and your paired user.
-
-## 📝 Example Usage (Button Flow)
-
-1. Open the main menu and tap "✏️ Edit Movies" (or use `/editdeletemenu`).
-2. See your full movie list and choose:
-   - "✏️ Edit Title" — select a movie, then enter a new title.
-   - "🗂️ Edit Category" — select a movie, then pick Planned/Loved.
-   - "🗑️ Delete" — select a movie, then confirm deletion.
-3. All changes are instantly reflected for both you and your partner.
+- User authentication and profile management
 
 ## 🛠️ Tech Stack
 - Python 3.10+
