@@ -100,6 +100,34 @@ erDiagram
 - Movie watch reminders
 - Integration with TMDB API for movie details and posters
 
+## 🆕 Advanced Features (2025)
+
+- **Full button-based interface**: All actions (add, edit, delete, change category, random pick) are available via Telegram buttons and menus — no need to remember commands.
+- **Edit movie title and category**: Change both the name and the category (planned/loved) of any movie via interactive inline menus.
+- **Delete with confirmation**: Deleting a movie always asks for confirmation via Yes/No buttons.
+- **Unified edit menu**: The "Edit Movies" menu allows you to:
+  - Edit movie title (choose a movie, then enter a new name)
+  - Change movie category (choose a movie, then select category)
+  - Delete a movie (choose a movie, then confirm)
+- **Robust error handling**: All user actions and errors are logged; the bot provides clear feedback for every operation.
+- **Partner-aware**: All lists and actions are always synchronized between you and your paired user.
+
+## 📝 Example Usage (Button Flow)
+
+1. Open the main menu and tap "✏️ Edit Movies" (or use `/editdeletemenu`).
+2. See your full movie list and choose:
+   - "✏️ Edit Title" — select a movie, then enter a new title.
+   - "🗂️ Edit Category" — select a movie, then pick Planned/Loved.
+   - "🗑️ Delete" — select a movie, then confirm deletion.
+3. All changes are instantly reflected for both you and your partner.
+
+## 🛠️ Tech Stack
+- Python 3.10+
+- python-telegram-bot
+- Supabase (PostgreSQL)
+- dotenv
+- Logging to file and console
+
 ## Installation
 
 1. Clone the repository:
@@ -122,9 +150,11 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file in the project root and add your bot token:
+4. Create a `.env` file in the project root, add your bot token and since I'm using Supabase, add your Supabase URL and key:
 ```
 TELEGRAM_BOT_TOKEN=your_bot_token_here
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_KEY=your_supabase_key_here
 ```
 
 ## Running the Bot

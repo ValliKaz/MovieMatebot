@@ -276,11 +276,182 @@ def unlink(update: Update, context: CallbackContext):
             parse_mode='HTML'
         )
 
+def edit_movie(update: Update, context: CallbackContext):
+    chat_id = str(update.effective_chat.id)
+    user_id = supabase.table("users").select("id").eq("chat_id", chat_id).execute().data[0]["id"]
+    try:
+        movie_id = context.args[0]
+        new_title = " ".join(context.args[1:])
+        if not new_title:
+            update.message.reply_text("Usage: /edit <code>movie_id</code> <code>new_title</code>")
+            return
+        result = supabase.table("movies").update({"title": new_title}).eq("id", movie_id).eq("user_id", user_id).execute()
+        if result.data:
+            update.message.reply_text(f"Movie updated to: <b>{new_title}</b>", parse_mode='HTML')
+        else:
+            update.message.reply_text("Movie not found or you don't have permission to edit it.")
+    except Exception as e:
+        logger.error(f"Error editing movie: {e}")
+        update.message.reply_text("Error editing movie. Usage: /edit <code>movie_id</code> <code>new_title</code>")
+
+def delete_movie(update: Update, context: CallbackContext):
+    chat_id = str(update.effective_chat.id)
+    user_id = supabase.table("users").select("id").eq("chat_id", chat_id).execute().data[0]["id"]
+    try:
+        movie_id = context.args[0]
+        result = supabase.table("movies").delete().eq("id", movie_id).eq("user_id", user_id).execute()
+        if result.data:
+            update.message.reply_text("Movie deleted.")
+        else:
+            update.message.reply_text("Movie not found or you don't have permission to delete it.")
+    except Exception as e:
+        logger.error(f"Error deleting movie: {e}")
+        update.message.reply_text("Error deleting movie. Usage: /delete <movie_id>")
+
+def edit_list_menu(update: Update, context: CallbackContext):
+    chat_id = str(update.effective_chat.id)
+    user = supabase.table("users").select("id, partner_id").eq("chat_id", chat_id).execute().data[0]
+    user_ids = [user["id"]]
+    if user["partner_id"]:
+        user_ids.append(user["partner_id"])
+    movies = supabase.table("movies").select("id, title, category").in_("user_id", user_ids).execute().data
+    if not movies:
+        update.message.reply_text("No movies to edit or delete.")
+        return
+    text = "<b>Your movies:</b>\n"
+    for m in movies:
+        cat = 'loved' if m['category'] == 'watched' else m['category']
+        text += f"ID: <code>{m['id']}</code> | {m['title']} ({cat})\n"
+    text += "\n<em>Note: You can tap and copy the <code>ID</code> for use in commands below.</em>\n"
+    text += "Choose an action below or use commands:\nTo edit: /edit <code>movie_id</code> <code>new_title</code>\nTo delete: /delete <code>movie_id</code>\nTo change category: /setcat <code>movie_id</code> <code>planned|loved</code>"
+    keyboard = [
+        [InlineKeyboardButton("✏️ Edit Title", callback_data="choose_edit"),
+         InlineKeyboardButton("🗂️ Edit Category", callback_data="choose_editcat")],
+        [InlineKeyboardButton("🗑️ Delete", callback_data="choose_delete")]
+    ]
+    update.message.reply_text(
+        text,
+        parse_mode='HTML',
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+def edit_delete_menu(update: Update, context: CallbackContext):
+    chat_id = str(update.effective_chat.id)
+    user = supabase.table("users").select("id, partner_id").eq("chat_id", chat_id).execute().data[0]
+    user_ids = [user["id"]]
+    if user["partner_id"]:
+        user_ids.append(user["partner_id"])
+    movies = supabase.table("movies").select("id, title, category").in_("user_id", user_ids).execute().data
+    if not movies:
+        update.message.reply_text("No movies to edit or delete.")
+        return
+    keyboard = [
+        [InlineKeyboardButton("✏️ Edit", callback_data="choose_edit"), InlineKeyboardButton("🗑️ Delete", callback_data="choose_delete")]
+    ]
+    update.message.reply_text(
+        "What do you want to do?",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+def choose_edit_delete_handler(update: Update, context: CallbackContext):
+    query = update.callback_query
+    chat_id = str(query.message.chat_id)
+    data = query.data
+    user = supabase.table("users").select("id, partner_id").eq("chat_id", chat_id).execute().data[0]
+    user_ids = [user["id"]]
+    if user["partner_id"]:
+        user_ids.append(user["partner_id"])
+    movies = supabase.table("movies").select("id, title, category").in_("user_id", user_ids).execute().data
+    if not movies:
+        query.answer()
+        query.edit_message_text("No movies to edit or delete.")
+        return
+    if data == "choose_edit":
+        keyboard = [[InlineKeyboardButton(f"{m['title']} ({'loved' if m['category']=='watched' else m['category']})", callback_data=f"edit_{m['id']}")] for m in movies]
+        query.edit_message_text(
+            "Select a movie to edit title:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data == "choose_editcat":
+        keyboard = [[InlineKeyboardButton(f"{m['title']} ({'loved' if m['category']=='watched' else m['category']})", callback_data=f"editcat_{m['id']}")] for m in movies]
+        query.edit_message_text(
+            "Select a movie to change category:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data == "choose_delete":
+        keyboard = [[InlineKeyboardButton(f"{m['title']} ({'loved' if m['category']=='watched' else m['category']})", callback_data=f"delete_{m['id']}")] for m in movies]
+        query.edit_message_text(
+            "Select a movie to delete:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data.startswith("delete_"):
+        movie_id = data.split("_")[1]
+        # Ask for confirmation
+        keyboard = [
+            [InlineKeyboardButton("✅ Yes, delete", callback_data=f"confirm_delete_{movie_id}"), InlineKeyboardButton("❌ Cancel", callback_data="cancel_delete")]
+        ]
+        query.edit_message_text(
+            f"Are you sure you want to delete this movie?",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data.startswith("confirm_delete_"):
+        movie_id = data.split("_")[2]
+        user_id = supabase.table("users").select("id").eq("chat_id", chat_id).execute().data[0]["id"]
+        result = supabase.table("movies").delete().eq("id", movie_id).eq("user_id", user_id).execute()
+        if result.data:
+            query.edit_message_text("Movie deleted.")
+        else:
+            query.edit_message_text("Movie not found or you don't have permission to delete it.")
+    elif data == "cancel_delete":
+        query.edit_message_text("Deletion cancelled.")
+    elif data.startswith("edit_"):
+        movie_id = data.split("_")[1]
+        context.user_data['edit_movie_id'] = movie_id
+        query.edit_message_text("Send the new title for this movie:")
+        context.user_data['awaiting_new_title'] = True
+    elif data.startswith("editcat_"):
+        movie_id = data.split("_")[1]
+        # Показываем выбор категории
+        keyboard = [
+            [InlineKeyboardButton("Planned 📅", callback_data=f"setcat_{movie_id}_planned"),
+             InlineKeyboardButton("Loved ❤️", callback_data=f"setcat_{movie_id}_loved")]
+        ]
+        query.edit_message_text(
+            "Choose new category:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data.startswith("setcat_"):
+        _, movie_id, cat = data.split("_", 2)
+        db_category = 'watched' if cat == 'loved' else cat
+        user_id = supabase.table("users").select("id").eq("chat_id", chat_id).execute().data[0]["id"]
+        result = supabase.table("movies").update({"category": db_category}).eq("id", movie_id).eq("user_id", user_id).execute()
+        if result.data:
+            query.edit_message_text(f"Category updated to: <b>{cat}</b>", parse_mode='HTML')
+        else:
+            query.edit_message_text("Movie not found or you don't have permission to edit it.")
+
+def handle_new_title(update: Update, context: CallbackContext):
+    if context.user_data.get('awaiting_new_title') and context.user_data.get('edit_movie_id'):
+        chat_id = str(update.effective_chat.id)
+        movie_id = context.user_data['edit_movie_id']
+        new_title = update.message.text.strip()
+        user_id = supabase.table("users").select("id").eq("chat_id", chat_id).execute().data[0]["id"]
+        result = supabase.table("movies").update({"title": new_title}).eq("id", movie_id).eq("user_id", user_id).execute()
+        if result.data:
+            update.message.reply_text(f"Movie updated to: <b>{new_title}</b>", parse_mode='HTML')
+        else:
+            update.message.reply_text("Movie not found or you don't have permission to edit it.")
+        context.user_data.pop('edit_movie_id', None)
+        context.user_data.pop('awaiting_new_title', None)
+
 def menu_handler(update: Update, context: CallbackContext):
     text = update.message.text
+    if context.user_data.get('awaiting_new_title') and context.user_data.get('edit_movie_id'):
+        return handle_new_title(update, context)
     if context.user_data.get('awaiting_movie_title'):
-        # If waiting for a movie title, handle it here
         return handle_movie_title(update, context)
+    # Normalize text for edit movies button (strip spaces, ignore emoji)
+    normalized = text.strip().replace('✏️', '').replace('📝', '').replace(' ', '').lower()
     if text == "➕ Add Movie":
         return add_movie(update, context)
     elif text == "📋 List Movies":
@@ -288,9 +459,12 @@ def menu_handler(update: Update, context: CallbackContext):
             "Which list do you want to see?",
             reply_markup=ReplyKeyboardMarkup([
                 [KeyboardButton("Planned"), KeyboardButton("Loved")],
+                [KeyboardButton("✏️ Edit Movies")],
                 [KeyboardButton("⬅️ Back to Menu")]
             ], resize_keyboard=True)
         )
+    elif "editmovies" in normalized:
+        return edit_list_menu(update, context)
     elif text == "🎲 Random Movie":
         update.message.reply_text(
             "Choose a list for random movie:",
@@ -337,8 +511,11 @@ def main():
     dp.add_handler(CommandHandler("random", random_movie))
     dp.add_handler(CommandHandler("partner_status", partner_status))
     dp.add_handler(CommandHandler("unlink", unlink))
+    dp.add_handler(CommandHandler("edit", edit_movie))
+    dp.add_handler(CommandHandler("delete", delete_movie))
+    dp.add_handler(CommandHandler("editdeletemenu", edit_delete_menu))
+    dp.add_handler(CallbackQueryHandler(choose_edit_delete_handler, pattern=r'^(choose_edit|choose_delete|edit_.*|delete_.*|confirm_delete_.*|cancel_delete|choose_editcat|editcat_.*|setcat_.*)$'))
     dp.add_handler(CallbackQueryHandler(button_handler))
-    # Only one MessageHandler for text, menu_handler will route to handle_movie_title if needed
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, menu_handler))
     updater.start_polling()
     updater.idle()
