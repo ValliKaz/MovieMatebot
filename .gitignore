@@ -1,5 +1,20 @@
-#Secret files
+# Cache files
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# Environment files
 .env
 
-#virtiual environment
+# Virtual environment
 venv/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.vscode/
+.idea/

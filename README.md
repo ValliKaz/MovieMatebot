@@ -100,34 +100,34 @@ erDiagram
 - Movie watch reminders
 - Integration with TMDB API for movie details and posters
 
-## Установка
+## Installation
 
-1. Клонируйте репозиторий:
+1. Clone the repository:
 ```bash
 git clone https://github.com/ValliKaz/MovieMatebot.git
 cd MovieMateBot
 ```
 
-2. Создайте виртуальное окружение и активируйте его:
+2. Create and activate a virtual environment:
 ```bash
 python -m venv venv
-# Для Windows:
+# For Windows:
 venv\Scripts\activate
-# Для Linux/Mac:
+# For Linux/Mac:
 source venv/bin/activate
 ```
 
-3. Установите зависимости:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Создайте файл .env в корневой директории проекта и добавьте в него токен вашего бота:
+4. Create a `.env` file in the project root and add your bot token:
 ```
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 ```
 
-## Запуск бота
+## Running the Bot
 
 ```bash
 python bot.py
