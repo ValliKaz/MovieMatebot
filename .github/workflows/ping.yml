@@ -13,6 +13,6 @@ jobs:
     steps:
       - name: Ping Bot
         run: |
-          curl -X GET https://myloveadilyabot.onrender.com
+          curl -X GET https://moviematebot.onrender.com
         env:
-          BOT_URL: https://myloveadilyabot.onrender.com 
+          BOT_URL:  https://moviematebot.onrender.com
