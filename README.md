@@ -1,6 +1,6 @@
 # MovieMate Telegram Bot
 
-**MovieMateBot** is a Telegram bot designed to simplify movie planning and tracking for pairs of users. It allows two users to create a shared movie list, categorized as "Planned" or "Watched," add movies, view lists, and get random movie suggestions from their planned list. Users connect via an invite code and interact with a unified dataset stored in Supabase.
+**MovieMateBot** is a Telegram bot designed to simplify movie planning and tracking for pairs of users. It allows two users to create a shared movie list, categorized as "Planned" or "Loved," add movies, view lists, and get random movie suggestions from their planned list. Users connect via an invite code and interact with a unified dataset stored in Supabase.
 
 ## 📘 Project Overview
 
@@ -134,6 +134,41 @@ erDiagram
 - `users.partner_id`: Self-referential foreign key for pairing users.
 - `movies.user_id`: Links movies to their owner.
 
+## 🌐 TMDB API Integration
+
+### Поиск и добавление фильмов
+- При добавлении фильма пользователь вводит название, бот ищет совпадения через TMDB и предлагает выбрать нужный фильм из списка (с постером и кратким описанием).
+- После выбора сохраняется TMDB ID, оригинальное название, постер и краткая информация.
+
+### Отображение фильмов в списках
+- В списках фильмов показываются не только названия, но и миниатюра постера, год выпуска, жанры и краткое описание (если есть TMDB ID).
+- Для фильмов, добавленных вручную без TMDB, отображается только текст.
+
+### Рандомный выбор фильма
+- При выдаче случайного фильма показывается постер и детали из TMDB (если доступны).
+
+### Редактирование фильма
+- Можно "связать" существующий фильм с TMDB, если он был добавлен вручную.
+
+### Хранение данных
+- В таблицу `movies` добавлены поля: `tmdb_id`, `poster_url`, `overview`, `release_year` (или хранится только `tmdb_id`, а детали подгружаются по API при необходимости).
+
+### Кнопка "Подробнее"
+- В каждом фильме есть кнопка "Подробнее", которая открывает страницу TMDB или показывает расширенную информацию прямо в чате.
+
+### Инструкция по получению TMDB API ключа
+1. Зарегистрируйтесь на https://www.themoviedb.org/ и подтвердите email.
+2. Перейдите в настройки профиля → API → Создать ключ (API v3 auth).
+3. Добавьте ключ в `.env`:
+   ```
+   TMDB_API_KEY=ваш_ключ_от_tmdb
+   ```
+4. Перезапустите бота.
+
+### Примечание
+- Все возможности TMDB работают только при наличии корректного API-ключа.
+- Если фильм не найден в TMDB, его можно добавить вручную, как раньше.
+
 ## 📦 Deployment & Technical Details
 
 - **Bot Hosting**: Any server supporting Python
@@ -144,10 +179,10 @@ erDiagram
 
 ## 📈 Future Enhancements
 
-- AI-powered movie recommendations
-- Support for groups larger than two users
-- Integration with TMDB API for movie details and posters
-- User authentication and profile management
+- AI-powered movie recommendations (High priority)
+- Support for groups larger than two users (Middle priority)
+- Integration with TMDB API for movie details and posters (High priority)
+- User authentication and profile management (Low priority)
 
 ## 🛠️ Tech Stack
 - Python 3.10+

@@ -10,7 +10,8 @@ def main_menu_keyboard():
     return ReplyKeyboardMarkup([
         [KeyboardButton("➕ Add Movie"), KeyboardButton("📋 List Movies")],
         [KeyboardButton("🎲 Random Movie"), KeyboardButton("🤝 Partner Status")],
-        [KeyboardButton("🔗 Invite"), KeyboardButton("🔓 Unlink")]
+        [KeyboardButton("🔗 Invite"), KeyboardButton("🔓 Unlink")],
+        [KeyboardButton("🌐 TMDB Menu")],
     ], resize_keyboard=True)
 
 def edit_delete_inline_keyboard(movie_id):

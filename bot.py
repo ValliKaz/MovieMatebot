@@ -27,12 +27,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def main_menu_keyboard():
-    return ReplyKeyboardMarkup([
-        [KeyboardButton("➕ Add Movie"), KeyboardButton("📋 List Movies")],
-        [KeyboardButton("🎲 Random Movie"), KeyboardButton("🤝 Partner Status")],
-        [KeyboardButton("🔗 Invite"), KeyboardButton("🔓 Unlink")]
-    ], resize_keyboard=True)
+# Import keyboard layouts from keyboards.py
+from keyboards import main_menu_keyboard
 
 def start(update: Update, context: CallbackContext):
     chat_id = str(update.effective_chat.id)
@@ -496,12 +492,36 @@ def menu_handler(update: Update, context: CallbackContext):
         return list_movies(update, context)
     elif text == "⬅️ Back to Menu":
         update.message.reply_text("Back to main menu.", reply_markup=main_menu_keyboard())
+    elif text == "🌐 TMDB Menu":
+        tmdb_menu = ReplyKeyboardMarkup([
+            [KeyboardButton("🔍 Поиск фильма (TMDB)")],
+            [KeyboardButton("🎬 Популярные фильмы (TMDB)")],
+            [KeyboardButton("⭐ Топ рейтинга (TMDB)")],
+            [KeyboardButton("⬅️ Back to Menu")]
+        ], resize_keyboard=True)
+        update.message.reply_text("Меню TMDB: выберите действие.", reply_markup=tmdb_menu)
+    elif text == "🔍 Поиск фильма (TMDB)":
+        update.message.reply_text("Введите название фильма для поиска через TMDB:")
+        context.user_data['awaiting_tmdb_search'] = True
+        return
+    elif text == "🎬 Популярные фильмы (TMDB)":
+        from handlers.tmdb import tmdb_popular
+        return tmdb_popular(update, context)
+    elif text == "⭐ Топ рейтинга (TMDB)":
+        from handlers.tmdb import tmdb_top_rated
+        return tmdb_top_rated(update, context)
+    elif context.user_data.get('awaiting_tmdb_search'):
+        from handlers.tmdb import tmdb_search
+        context.user_data.pop('awaiting_tmdb_search', None)
+        return tmdb_search(update, context)
     else:
         update.message.reply_text("Please use the menu buttons below.", reply_markup=main_menu_keyboard())
 
 def main():
     updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
+    
+    # Add command handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("invite", invite))
     dp.add_handler(CommandHandler("join", join))
@@ -512,9 +532,29 @@ def main():
     dp.add_handler(CommandHandler("unlink", unlink))
     dp.add_handler(CommandHandler("edit", edit_movie))
     dp.add_handler(CommandHandler("delete", delete_movie))
-    dp.add_handler(CommandHandler("editdeletemenu", edit_delete_menu))
+    dp.add_handler(CommandHandler("editdeletemenu", edit_delete_menu))    # Import handlers for TMDB and callbacks
+    from handlers.callbacks import button_handler, handle_add_to_list
+    from handlers.tmdb import (
+        handle_tmdb_next, handle_tmdb_prev, handle_show_full_description,
+        handle_tmdb_category_selection, handle_back_to_movie, handle_view_movie,
+        handle_back_to_list
+    )
+
+    # Add all the TMDB-related callback handlers
+    dp.add_handler(CallbackQueryHandler(handle_tmdb_next, pattern=r'^tmdb_next$'))
+    dp.add_handler(CallbackQueryHandler(handle_tmdb_prev, pattern=r'^tmdb_prev$')) 
+    dp.add_handler(CallbackQueryHandler(handle_add_to_list, pattern=r'^tmdb_add_to_list_.*'))
+    dp.add_handler(CallbackQueryHandler(handle_show_full_description, pattern=r'^show_full_\d+$'))
+    dp.add_handler(CallbackQueryHandler(handle_back_to_movie, pattern=r'^back_to_movie_\d+$'))
+    dp.add_handler(CallbackQueryHandler(handle_view_movie, pattern=r'^view_movie_\d+$'))
+    dp.add_handler(CallbackQueryHandler(handle_back_to_list, pattern=r'^back_to_list$'))
+    dp.add_handler(CallbackQueryHandler(handle_tmdb_category_selection, pattern=r'^tmdb_category_(planned|loved)_\d+$'))
+    dp.add_handler(CallbackQueryHandler(button_handler, pattern=r'^category_.*'))
+
+    # Add the edit/delete callback handlers
     dp.add_handler(CallbackQueryHandler(choose_edit_delete_handler, pattern=r'^(choose_edit|choose_delete|edit_.*|delete_.*|confirm_delete_.*|cancel_delete|choose_editcat|editcat_.*|setcat_.*)$'))
-    dp.add_handler(CallbackQueryHandler(button_handler))
+
+    # Add the message handler last
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, menu_handler))
     updater.start_polling()
     updater.idle()
