@@ -3,7 +3,7 @@ name: Bot Ping
 on:
   schedule:
     # Запускаем каждые 14 минут
-    - cron: '*/14 * * * *'
+    - cron: '*/5 * * * *'
   # Позволяем запускать вручную
   workflow_dispatch:
 
