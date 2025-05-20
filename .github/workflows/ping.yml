@@ -1,0 +1,18 @@
+name: Bot Ping
+
+on:
+  schedule:
+    # Запускаем каждые 14 минут
+    - cron: '*/14 * * * *'
+  # Позволяем запускать вручную
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Bot
+        run: |
+          curl -X GET https://myloveadilyabot.onrender.com
+        env:
+          BOT_URL: https://myloveadilyabot.onrender.com 
