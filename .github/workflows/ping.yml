@@ -13,6 +13,5 @@ jobs:
     steps:
       - name: Ping Bot
         run: |
-          curl -X GET https://moviematebot.onrender.com
-        env:
-          BOT_URL:  https://moviematebot.onrender.com
+          curl -X GET https://moviematebot.onrender.com        env:
+          BOT_URL: https://moviematebot.onrender.com
