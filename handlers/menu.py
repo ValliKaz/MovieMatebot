@@ -4,12 +4,15 @@ import random
 import logging
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 from supabase import create_client, Client
 from db import supabase
 from keyboards import main_menu_keyboard
-from handlers.callbacks import handle_add_to_list, handle_category_selection
-from handlers.tmdb import tmdb_search, tmdb_popular, tmdb_top_rated
+from .callbacks import handle_add_to_list, handle_category_selection
+from .tmdb import tmdb_search, tmdb_popular, tmdb_top_rated
+from .movies import handle_movie_title, add_movie, list_movies, random_movie
+from .edit_menu import handle_new_title, edit_list_menu
+from .partner import partner_status, invite, unlink
 
 # --- Menu and navigation handlers ---
 def start(update: Update, context: CallbackContext):
@@ -41,20 +44,18 @@ def start(update: Update, context: CallbackContext):
         update.message.reply_text("An error occurred while processing your request. Please try again later.", reply_markup=main_menu_keyboard())
 
 def menu_handler(update: Update, context: CallbackContext):
+    """Handle all menu interactions."""
     text = update.message.text
 
     # Handle special states first
     if context.user_data.get('awaiting_new_title') and context.user_data.get('edit_movie_id'):
-        from handlers.movies import handle_new_title
         return handle_new_title(update, context)
     
     if context.user_data.get('awaiting_movie_title'):
-        from handlers.movies import handle_movie_title
         return handle_movie_title(update, context)
 
     # Handle TMDB search state
     if context.user_data.get('awaiting_tmdb_search'):
-        from handlers.movies import tmdb_search
         context.user_data.pop('awaiting_tmdb_search', None)
         return tmdb_search(update, context)
 
@@ -62,96 +63,85 @@ def menu_handler(update: Update, context: CallbackContext):
     normalized = text.strip().replace('✏️', '').replace('📝', '').replace(' ', '').lower()
 
     # Main menu options
-    if text == "➕ Add Movie":
-        from handlers.movies import add_movie
+    if text == "🎬 Add Movie":
         return add_movie(update, context)
     
-    elif text == "📋 List Movies":
+    elif text == "📋 My Lists":
         update.message.reply_text(
-            "Which list do you want to see?",
+            "📋 Which list do you want to see?",
             reply_markup=ReplyKeyboardMarkup([
-                [KeyboardButton("Planned"), KeyboardButton("Loved")],
+                [KeyboardButton("📅 Planned"), KeyboardButton("❤️ Loved")],
                 [KeyboardButton("✏️ Edit Movies")],
                 [KeyboardButton("⬅️ Back to Menu")]
             ], resize_keyboard=True)
         )
     
-    elif text == "🌐 TMDB Menu":
+    elif text == "🌟 Browse TMDB":
         tmdb_menu = ReplyKeyboardMarkup([
-            [KeyboardButton("🔍 Поиск фильма (TMDB)")],
-            [KeyboardButton("🎬 Популярные фильмы (TMDB)")],
-            [KeyboardButton("⭐ Топ рейтинга (TMDB)")],
+            [KeyboardButton("🔍 Search Movie")],
+            [KeyboardButton("🎬 Popular Movies")],
+            [KeyboardButton("⭐ Top Rated")],
             [KeyboardButton("⬅️ Back to Menu")]
         ], resize_keyboard=True)
-        update.message.reply_text("Меню TMDB: выберите действие.", reply_markup=tmdb_menu)
+        update.message.reply_text("🎬 TMDB Menu: Choose an action", reply_markup=tmdb_menu)
     
-    # TMDB menu options
-    elif text == "🔍 Поиск фильма (TMDB)":
-        update.message.reply_text("Введите название фильма для поиска через TMDB:")
+    elif text == "🔍 Search Movie":
+        update.message.reply_text("🔍 Enter a movie title to search in TMDB:")
         context.user_data['awaiting_tmdb_search'] = True
     
-    elif text == "🎬 Популярные фильмы (TMDB)":
-        from handlers.tmdb import tmdb_popular
+    elif text == "🎬 Popular Movies":
         return tmdb_popular(update, context)
     
-    elif text == "⭐ Топ рейтинга (TMDB)":
-        from handlers.tmdb import tmdb_top_rated
+    elif text == "⭐ Top Rated":
         return tmdb_top_rated(update, context)
     
-    # Other menu options
-    elif "editmovies" in normalized:
-        from handlers.movies import edit_list_menu
+    elif text == "✏️ Edit Movies":
         return edit_list_menu(update, context)
     
-    elif text == "🎲 Random Movie":
+    elif text == "🎲 Random Pick":
         update.message.reply_text(
-            "Choose a list for random movie:",
+            "🎲 Choose a list for random movie:",
             reply_markup=ReplyKeyboardMarkup([
-                [KeyboardButton("Random from Planned"), KeyboardButton("Random from Loved")],
-                [KeyboardButton("Random from All")],
+                [KeyboardButton("🎲 From Planned"), KeyboardButton("🎲 From Loved")],
+                [KeyboardButton("🎲 From All Lists")],
                 [KeyboardButton("⬅️ Back to Menu")]
             ], resize_keyboard=True)
         )
     
-    elif text == "Random from Planned":
+    elif text == "🎲 From Planned":
         context.args = ["planned"]
-        from handlers.movies import random_movie
         return random_movie(update, context)
     
-    elif text == "Random from Loved":
+    elif text == "🎲 From Loved":
         context.args = ["loved"]
-        from handlers.movies import random_movie
         return random_movie(update, context)
     
-    elif text == "Random from All":
+    elif text == "🎲 From All Lists":
         context.args = ["all"]
-        from handlers.movies import random_movie
         return random_movie(update, context)
     
-    elif text == "🤝 Partner Status":
-        from handlers.partner import partner_status
+    elif text == "👥 Partner Status":
         return partner_status(update, context)
     
-    elif text == "🔗 Invite":
-        from handlers.partner import invite
+    elif text == "🔗 Invite Friend":
         return invite(update, context)
     
-    elif text == "🔓 Unlink":
-        from handlers.partner import unlink
+    elif text == "🔓 Unlink Partner":
         return unlink(update, context)
     
-    elif text == "Planned":
+    elif text == "📅 Planned":
         context.args = ["planned"]
-        from handlers.movies import list_movies
         return list_movies(update, context)
     
-    elif text == "Loved":
+    elif text == "❤️ Loved":
         context.args = ["loved"]
-        from handlers.movies import list_movies
         return list_movies(update, context)
     
     elif text == "⬅️ Back to Menu":
-        update.message.reply_text("Back to main menu.", reply_markup=main_menu_keyboard())
+        update.message.reply_text("📱 Back to main menu", reply_markup=main_menu_keyboard())
     
     else:
-        update.message.reply_text("Please use the menu buttons below.", reply_markup=main_menu_keyboard())
+        update.message.reply_text(
+            "Please use the menu buttons below 👇",
+            reply_markup=main_menu_keyboard()
+        )

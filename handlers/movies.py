@@ -42,7 +42,7 @@ def list_movies(update: Update, context: CallbackContext):
         category = context.args[0]
         db_category = 'watched' if category == 'loved' else category
         if db_category not in ["planned", "watched"]:
-            update.message.reply_text("Category must be 'planned' or 'loved'.")
+            update.message.reply_text("📝 Category must be 'planned' or 'loved'.")
             return
             
         user = supabase.table("users").select("id, partner_id").eq("chat_id", chat_id).execute().data[0]
@@ -52,19 +52,30 @@ def list_movies(update: Update, context: CallbackContext):
             
         movies = supabase.table("movies").select("*").in_("user_id", user_ids).eq("category", db_category).execute()
         if not movies.data:
-            update.message.reply_text(f"No movies in <b>{category}</b> list yet. Use /add to add some!", parse_mode='HTML')
+            update.message.reply_text(
+                f"📭 Your {category} list is empty!\n\n"
+                "➕ Use <code>/add</code> or the menu button to add movies\n"
+                "🔍 Or try searching TMDB for suggestions", 
+                parse_mode='HTML'
+            )
             return
             
-        response = f"<b>Movies in {category.title()}:</b>\n" + "\n".join([f"• {movie['title']}" for movie in movies.data])
+        emoji = "📅" if category == "planned" else "❤️"
+        response = (
+            f"{emoji} <b>Your {category} movies:</b>\n\n" + 
+            "\n".join([f"• {movie['title']}" for movie in movies.data])
+        )
         update.message.reply_text(response, parse_mode='HTML')
     except IndexError:
         update.message.reply_text(
-            "Usage: <code>/list planned</code> or <code>/list loved</code>",
+            "ℹ️ Usage:\n"
+            "<code>/list planned</code> - See movies you want to watch\n"
+            "<code>/list loved</code> - See movies you've watched and loved",
             parse_mode='HTML'
         )
 
 def random_movie(update: Update, context: CallbackContext):
-    """Get a random movie from a category."""
+    """Get a random movie suggestion."""
     chat_id = str(update.effective_chat.id)
     user = supabase.table("users").select("id, partner_id").eq("chat_id", chat_id).execute().data[0]
     user_ids = [user["id"]]
@@ -84,14 +95,20 @@ def random_movie(update: Update, context: CallbackContext):
             
     movies = supabase.table("movies").select("*").in_("user_id", user_ids).in_("category", categories).execute()
     if not movies.data:
-        cat_text = 'planned and loved' if shown_category == 'all' else shown_category
-        update.message.reply_text(f"No movies in <b>{cat_text}</b> list.", parse_mode='HTML')
+        cat_text = 'both lists' if shown_category == 'all' else f'{shown_category} list'
+        update.message.reply_text(
+            f"🎲 No movies in {cat_text}!\n\n"
+            "➕ Add some movies first using the menu.",
+            parse_mode='HTML'
+        )
         return
         
     movie = random.choice(movies.data)
+    # Show 'loved' for watched in UI
     display_cat = 'loved' if movie['category'] == 'watched' else movie['category']
     update.message.reply_text(
-        f"🎲 <b>Random movie from {display_cat}:</b>\n<b>{movie['title']}</b>",
+        f"🎲 <b>Your random pick from {display_cat}:</b>\n\n"
+        f"🎬 <b>{movie['title']}</b>",
         parse_mode='HTML'
     )
 
@@ -129,3 +146,23 @@ def delete_movie(update: Update, context: CallbackContext):
     except Exception as e:
         logging.error(f"Error deleting movie: {e}")
         update.message.reply_text("Error deleting movie. Usage: /delete <movie_id>")
+
+def handle_movie_title(update: Update, context: CallbackContext):
+    """Handle movie title input for adding a new movie."""
+    chat_id = str(update.effective_chat.id)
+    if context.user_data.get('awaiting_movie_title'):
+        title = update.message.text.strip()
+        context.user_data['pending_movie_title'] = title
+        context.user_data['awaiting_movie_title'] = False
+        keyboard = [
+            [InlineKeyboardButton("📅 Planned", callback_data='category_planned')],
+            [InlineKeyboardButton("❤️ Loved", callback_data='category_loved')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.message.reply_text(
+            f"In which category should I add '<b>{title}</b>'?\n\n"
+            "📅 <b>Planned</b> — movies you want to watch\n"
+            "❤️ <b>Loved</b> — movies you've watched and liked",
+            parse_mode='HTML',
+            reply_markup=reply_markup
+        )
